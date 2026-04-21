@@ -5,8 +5,8 @@ from transformers import pipeline
 MODEL_ID = "ProsusAI/finbert"
 
 LABEL_TO_SCORE = {
-    "positive":  1,
-    "neutral":   0,
+    "positive": 1,
+    "neutral": 0,
     "negative": -1,
 }
 
@@ -35,50 +35,58 @@ class SentimentResult:
     all_scores: dict
 
 
-def score_batch(texts: list) -> list:
+def score_batch(texts: list[str]) -> list[SentimentResult]:
     clf = _get_pipeline()
     raw_batch = clf(texts)
     results = []
     for raw in raw_batch:
         all_scores = {r["label"]: round(r["score"], 4) for r in raw}
         best = max(raw, key=lambda r: r["score"])
-        results.append(SentimentResult(
-            label=best["label"],
-            score=LABEL_TO_SCORE[best["label"]],
-            confidence=round(best["score"], 4),
-            all_scores=all_scores,
-        ))
+        results.append(
+            SentimentResult(
+                label=best["label"],
+                score=LABEL_TO_SCORE[best["label"]],
+                confidence=round(best["score"], 4),
+                all_scores=all_scores,
+            )
+        )
     return results
 
 
-def compute_weight(published_at: datetime | None, now: datetime) -> float:
+def compute_recency_weight(published_at: datetime | None, now: datetime) -> float:
     if published_at is None:
-        return 1.0
+        return 0.6
 
     if published_at.tzinfo is None:
         published_at = published_at.replace(tzinfo=timezone.utc)
 
-    delta_hours = (now - published_at).total_seconds() / 3600
+    delta_hours = max(0.0, (now - published_at).total_seconds() / 3600)
 
     if delta_hours <= 24:
         return 1.0
-    elif delta_hours <= 72:
-        return 0.7
-    elif delta_hours <= 168:
-        return 0.4
-    else:
-        return 0.2
+    if delta_hours <= 72:
+        return 0.75
+    if delta_hours <= 168:
+        return 0.5
+    return 0.25
 
 
-def weighted_average(results, items):
+def compute_confidence_weight(confidence: float) -> float:
+    return max(0.35, min(1.0, confidence))
+
+
+def compute_item_weight(result: SentimentResult, published_at: datetime | None, now: datetime) -> float:
+    return compute_recency_weight(published_at, now) * compute_confidence_weight(result.confidence)
+
+
+def weighted_average(results: list[SentimentResult], items: list) -> float:
     now = datetime.now(timezone.utc)
+    weighted_sum = 0.0
+    weight_total = 0.0
 
-    weighted_sum = 0
-    weight_total = 0
+    for result, item in zip(results, items):
+        weight = compute_item_weight(result, getattr(item, "published_at", None), now)
+        weighted_sum += result.score * weight
+        weight_total += weight
 
-    for r, item in zip(results, items):
-        w = compute_weight(getattr(item, "published_at", None), now)
-        weighted_sum += r.score * w
-        weight_total += w
-
-    return weighted_sum / weight_total if weight_total else 0
+    return weighted_sum / weight_total if weight_total else 0.0
