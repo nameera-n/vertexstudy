@@ -16,3 +16,5 @@ examples:
 python3 main.py ORCL
 python3 main.py https://finance.yahoo.com/news/oracle-plans-thousands-job-cuts-180243222.html
 python3 main.py ORCL MSFT NVDA META
+
+# updated pipeline + aggregation improvements
