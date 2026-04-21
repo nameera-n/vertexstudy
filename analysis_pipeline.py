@@ -92,53 +92,81 @@ def summarize_counts(results: list[SentimentResult]):
     }
 
 
-def print_results(items, results, title, fetched_count=None):
-    print(f"\n{'='*72}")
-    print(f"  FinBERT Sentiment Analysis — {title}")
-    print(f"{'='*72}\n")
-
-    for item, result in zip(items, results):
-        label_str = SCORE_LABELS[result.score]
-        conf_str = f"{result.confidence * 100:.1f}%"
-        display = item.text if len(item.text) <= 110 else item.text[:107] + "..."
-
-        print(f"  [{label_str}] conf={conf_str:<6}")
-        print(f'   "{display}"')
-        print()
-
-    avg = weighted_average(results, items)
+def build_analysis_payload(items, results, title, fetched_count=None):
+    avg = weighted_average(results, items) if results else 0.0
     overall = "POSITIVE" if avg > 0.1 else ("NEGATIVE" if avg < -0.1 else "NEUTRAL")
     counts = summarize_counts(results)
     dated_count = sum(1 for item in items if item.published_at is not None)
     undated_count = len(items) - dated_count
 
-    print(f"{'─'*72}")
-    if fetched_count is not None:
-        print(f"  Items analyzed     : {len(results)} of {fetched_count}")
-    else:
-        print(f"  Items analyzed     : {len(results)}")
-    print(f"  Positive (+1)      : {counts['positive']}")
-    print(f"  Neutral  ( 0)      : {counts['neutral']}")
-    print(f"  Negative (-1)      : {counts['negative']}")
-    print(f"  Avg confidence     : {counts['avg_confidence'] * 100:.1f}%")
-    print(f"  Dated items        : {dated_count}")
-    print(f"  Undated items      : {undated_count}")
-    print(f"  Weighted score     : {avg:+.3f}")
-    print(f"  Overall sentiment  : {overall}")
+    return {
+        "title": title,
+        "items_analyzed": len(results),
+        "items_fetched": fetched_count if fetched_count is not None else len(results),
+        "counts": counts,
+        "dated_items": dated_count,
+        "undated_items": undated_count,
+        "weighted_score": round(avg, 4),
+        "overall_sentiment": overall,
+        "items": [
+            {
+                "text": item.text,
+                "published_at": item.published_at.isoformat() if item.published_at else None,
+                "label": result.label,
+                "score": result.score,
+                "confidence": result.confidence,
+                "all_scores": result.all_scores,
+            }
+            for item, result in zip(items, results)
+        ],
+    }
+
+
+def print_results(items, results, title, fetched_count=None):
+    payload = build_analysis_payload(items, results, title, fetched_count=fetched_count)
+
+    print(f"\n{'='*72}")
+    print(f"  FinBERT Sentiment Analysis — {title}")
     print(f"{'='*72}\n")
 
+    for entry in payload["items"]:
+        label_str = SCORE_LABELS[entry["score"]]
+        conf_str = f"{entry['confidence'] * 100:.1f}%"
+        display = entry["text"] if len(entry["text"]) <= 110 else entry["text"][:107] + "..."
 
-def analyze_ticker(ticker: str, window):
+        print(f"  [{label_str}] conf={conf_str:<6}")
+        print(f'   "{display}"')
+        print()
+
+    print(f"{'─'*72}")
+    print(f"  Items analyzed     : {payload['items_analyzed']} of {payload['items_fetched']}")
+    print(f"  Positive (+1)      : {payload['counts']['positive']}")
+    print(f"  Neutral  ( 0)      : {payload['counts']['neutral']}")
+    print(f"  Negative (-1)      : {payload['counts']['negative']}")
+    print(f"  Avg confidence     : {payload['counts']['avg_confidence'] * 100:.1f}%")
+    print(f"  Dated items        : {payload['dated_items']}")
+    print(f"  Undated items      : {payload['undated_items']}")
+    print(f"  Weighted score     : {payload['weighted_score']:+.3f}")
+    print(f"  Overall sentiment  : {payload['overall_sentiment']}")
+    print(f"{'='*72}\n")
+
+    return payload
+
+
+def analyze_ticker(ticker: str, window, output_mode="print"):
     fetched_items = fetch_headlines(ticker)
     items = filter_by_time(fetched_items, window)
 
     texts = [i.text for i in items]
     results = score_batch(texts) if texts else []
 
-    print_results(items, results, f"{ticker.upper()}", fetched_count=len(fetched_items))
+    title = f"{ticker.upper()}"
+    if output_mode == "data":
+        return build_analysis_payload(items, results, title, fetched_count=len(fetched_items))
+    return print_results(items, results, title, fetched_count=len(fetched_items))
 
 
-def analyze_url(url: str, window):
+def analyze_url(url: str, window, output_mode="print"):
     fetched_items = fetch_headlines_from_url(url)
     filtered_items = filter_by_time(fetched_items, window)
 
@@ -146,4 +174,7 @@ def analyze_url(url: str, window):
     sentence_results = score_batch(texts) if texts else []
     article_items, article_results = aggregate_article_sentiment(filtered_items, sentence_results)
 
-    print_results(article_items, article_results, "URL", fetched_count=len(fetched_items))
+    title = "URL"
+    if output_mode == "data":
+        return build_analysis_payload(article_items, article_results, title, fetched_count=len(fetched_items))
+    return print_results(article_items, article_results, title, fetched_count=len(fetched_items))
