@@ -1,10 +1,14 @@
+from pathlib import Path
+import sys
 from datetime import datetime, timedelta, timezone
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from bs4 import BeautifulSoup
 from scraper import NewsItem
 from scraper_url import extract_publish_date
 from scorer import SentimentResult, compute_recency_weight, compute_confidence_weight, weighted_average
 from main import parse_window, filter_by_time
-from bs4 import BeautifulSoup
 
 
 NOW = datetime(2026, 4, 20, 12, 0, 0, tzinfo=timezone.utc)
