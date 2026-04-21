@@ -11,10 +11,8 @@ def analyze(ticker: str = None, url: str = None, window: str = None):
         return {"error": "Invalid window format"}
 
     if ticker:
-        analyze_ticker(ticker, w)
-        return {"message": f"Ran analysis for ticker {ticker}"}
+        return analyze_ticker(ticker, w, output_mode="data")
     elif url:
-        analyze_url(url, w)
-        return {"message": "Ran analysis for URL"}
+        return analyze_url(url, w, output_mode="data")
     else:
         return {"error": "Provide ticker or url"}
