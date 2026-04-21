@@ -16,18 +16,21 @@ def is_url(arg: str) -> bool:
 
 
 def parse_window(arg: str):
-    if arg.endswith("h"):
-        return timedelta(hours=int(arg[:-1]))
-    if arg.endswith("d"):
-        return timedelta(days=int(arg[:-1]))
-    return None
+    try:
+        if arg.endswith("h"):
+            return timedelta(hours=int(arg[:-1]))
+        if arg.endswith("d"):
+            return timedelta(days=int(arg[:-1]))
+    except Exception:
+        pass
+    raise ValueError("Invalid window format. Use formats like 24h or 7d.")
 
 
-def filter_by_time(items, window):
+def filter_by_time(items, window, now=None):
     if not window:
         return items
 
-    now = datetime.now(timezone.utc)
+    now = now or datetime.now(timezone.utc)
     filtered = []
 
     for item in items:
@@ -76,11 +79,12 @@ def analyze_ticker(ticker: str, window):
     print_results(items, results, f"{ticker.upper()}")
 
 
-def analyze_url(url: str):
-    texts = fetch_headlines_from_url(url)
-    results = score_batch(texts)
+def analyze_url(url: str, window):
+    items = fetch_headlines_from_url(url)
+    items = filter_by_time(items, window)
 
-    items = [{"text": t, "published_at": None} for t in texts]
+    texts = [i.text for i in items]
+    results = score_batch(texts)
 
     print_results(items, results, "URL")
 
@@ -104,6 +108,6 @@ if __name__ == "__main__":
 
     for arg in clean_args:
         if is_url(arg):
-            analyze_url(arg)
+            analyze_url(arg, window)
         else:
             analyze_ticker(arg, window)
