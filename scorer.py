@@ -79,8 +79,8 @@ def compute_item_weight(result: SentimentResult, published_at: datetime | None, 
     return compute_recency_weight(published_at, now) * compute_confidence_weight(result.confidence)
 
 
-def weighted_average(results: list[SentimentResult], items: list) -> float:
-    now = datetime.now(timezone.utc)
+def weighted_average(results: list[SentimentResult], items: list, now=None) -> float:
+    now = now or datetime.now(timezone.utc)
     weighted_sum = 0.0
     weight_total = 0.0
 
