@@ -1,25 +1,61 @@
 import sys
 import urllib.request
 import urllib.parse
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from html.parser import HTMLParser
+from email.utils import parsedate_to_datetime
 from xml.etree import ElementTree
 
-def _fetch_rss(ticker: str) -> list:
+
+@dataclass
+class NewsItem:
+    text: str
+    published_at: datetime | None = None
+
+
+def _to_utc(dt: datetime | None) -> datetime | None:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _parse_rss_datetime(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return _to_utc(parsedate_to_datetime(value))
+    except Exception:
+        return None
+
+
+def _fetch_rss(ticker: str) -> list[NewsItem]:
     url = f"https://finance.yahoo.com/rss/headline?s={urllib.parse.quote(ticker)}"
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             xml = resp.read()
         root = ElementTree.fromstring(xml)
-        titles = [item.findtext("title") for item in root.iter("item")]
-        return [t.strip() for t in titles if t and t.strip()]
+
+        items = []
+        for item in root.iter("item"):
+            title = item.findtext("title")
+            if not title or not title.strip():
+                continue
+            items.append(
+                NewsItem(
+                    text=title.strip(),
+                    published_at=_parse_rss_datetime(item.findtext("pubDate")),
+                )
+            )
+        return items
     except Exception:
         return []
 
 
 class HeadlineParser(HTMLParser):
-    """Extracts headline text from <h3> tags in Yahoo Finance HTML."""
-
     def __init__(self):
         super().__init__()
         self.headlines = []
@@ -43,7 +79,7 @@ class HeadlineParser(HTMLParser):
             self._current.append(data)
 
 
-def _fetch_html(ticker: str) -> list:
+def _fetch_html(ticker: str) -> list[NewsItem]:
     urls = [
         f"https://finance.yahoo.com/quote/{urllib.parse.quote(ticker)}/",
         f"https://finance.yahoo.com/quote/{urllib.parse.quote(ticker)}",
@@ -65,36 +101,37 @@ def _fetch_html(ticker: str) -> list:
             parser = HeadlineParser()
             parser.feed(html)
             if parser.headlines:
-                return parser.headlines
+                return [NewsItem(text=h) for h in parser.headlines]
         except Exception:
             continue
     return []
 
 
-def fetch_headlines(ticker: str) -> list:
-    """
-    Fetch and deduplicate news headlines for a ticker.
-    Tries RSS first, falls back to HTML scraping.
-    """
+def fetch_headlines(ticker: str) -> list[NewsItem]:
     ticker = ticker.upper()
 
     print(f"  [Fetching headlines for {ticker} via RSS...]")
-    headlines = _fetch_rss(ticker)
+    items = _fetch_rss(ticker)
 
-    if not headlines:
-        print(f"  [RSS empty, falling back to HTML scrape...]")
-        headlines = _fetch_html(ticker)
+    if not items:
+        print("  [RSS empty, falling back to HTML scrape...]")
+        items = _fetch_html(ticker)
 
-    if not headlines:
+    if not items:
         print(f"[ERROR] Could not retrieve headlines for {ticker}.")
         print("        Yahoo Finance may be blocking requests or has changed its structure.")
         sys.exit(1)
+
     seen = set()
     unique = []
-    for h in headlines:
-        if h not in seen:
-            seen.add(h)
-            unique.append(h)
+    dated_count = 0
+    for item in items:
+        if item.text not in seen:
+            seen.add(item.text)
+            unique.append(item)
+            if item.published_at is not None:
+                dated_count += 1
 
-    print(f"  [Found {len(unique)} headlines]\n")
+    print(f"  [Found {len(unique)} headlines | dated: {dated_count}]")
+    print()
     return unique
