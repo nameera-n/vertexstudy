@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from transformers import pipeline
 
 MODEL_ID = "ProsusAI/finbert"
 
@@ -16,6 +15,8 @@ _pipeline = None
 def _get_pipeline():
     global _pipeline
     if _pipeline is None:
+        from transformers import pipeline
+
         print(f"  [Loading FinBERT model: {MODEL_ID} — first run may take a moment]")
         _pipeline = pipeline(
             task="text-classification",
