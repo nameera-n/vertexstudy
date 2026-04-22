@@ -3,6 +3,10 @@ from analysis_pipeline import analyze_ticker, analyze_url, parse_window
 
 app = FastAPI()
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 @app.get("/analyze")
 def analyze(ticker: str = None, url: str = None, window: str = None):
     try:
