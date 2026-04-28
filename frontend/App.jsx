@@ -23,7 +23,7 @@ export default function App() {
   }
 
   const getSummary = () => {
-    if (!data || !data.results) return null
+    if (!data || !data.results) return []
 
     let pos = 0, neu = 0, neg = 0
     data.results.forEach(r => {
@@ -39,39 +39,51 @@ export default function App() {
     ]
   }
 
+  const getOverall = () => {
+    if (!data?.weighted_score) return ""
+    if (data.weighted_score > 0.1) return "Positive"
+    if (data.weighted_score < -0.1) return "Negative"
+    return "Neutral"
+  }
+
   return (
-    <div style={{ padding: '2rem', fontFamily: 'sans-serif', background: '#f9fafb', minHeight: '100vh' }}>
-      <h2 style={{ marginBottom: '1.5rem' }}>VertexStudy Dashboard</h2>
+    <div style={{ padding: '2rem', fontFamily: 'Inter, sans-serif', background: '#f9fafb', minHeight: '100vh' }}>
+
+      <h2 style={{ marginBottom: '1.5rem' }}>VertexStudy</h2>
 
       <div style={{ display: 'flex', gap: '2rem' }}>
 
-        {/* LEFT PANEL */}
-        <div style={{ flex: 1, background: 'white', padding: '1rem', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-          <h4>Input</h4>
+        <div style={{ flex: 1, background: 'white', padding: '1.2rem', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+          <h4>Analyze</h4>
+
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Enter ticker or URL"
-            style={{ padding: '0.6rem', borderRadius: '8px', width: '100%', marginBottom: '1rem' }}
+            style={{ padding: '0.7rem', borderRadius: '10px', width: '100%', marginBottom: '1rem', border: '1px solid #e5e7eb' }}
           />
-          <button onClick={analyze} style={{ padding: '0.6rem 1rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px' }}>
+
+          <button
+            onClick={analyze}
+            style={{ width: '100%', padding: '0.7rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' }}
+          >
             Analyze
           </button>
         </div>
 
-        {/* RIGHT PANEL */}
         <div style={{ flex: 2 }}>
 
           {loading && <p>Analyzing...</p>}
 
           {data && (
             <>
+
               <div style={{ background: 'white', padding: '1rem', borderRadius: '16px', marginBottom: '1rem', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                 <h4>Summary</h4>
+                <p><b>Sentiment:</b> {getOverall()}</p>
                 <p><b>Score:</b> {data.weighted_score?.toFixed(3)}</p>
               </div>
 
-              {/* CHART */}
               <div style={{ background: 'white', padding: '1rem', borderRadius: '16px', marginBottom: '1rem', height: '250px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={getSummary()}>
@@ -83,15 +95,15 @@ export default function App() {
                 </ResponsiveContainer>
               </div>
 
-              {/* RESULTS */}
-              {data.results?.slice(0,10).map((r, i) => (
+              {data.results?.slice(0, 10).map((r, i) => (
                 <div key={i} style={{ background: 'white', padding: '1rem', borderRadius: '16px', marginBottom: '1rem', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-                  <p>{r.text}</p>
+                  <p style={{ marginBottom: '0.5rem' }}>{r.text}</p>
                   <span style={{ color: r.score > 0 ? '#16a34a' : r.score < 0 ? '#dc2626' : '#6b7280' }}>
-                    {r.label} ({(r.confidence*100).toFixed(1)}%)
+                    {r.label} ({(r.confidence * 100).toFixed(1)}%)
                   </span>
                 </div>
               ))}
+
             </>
           )}
 
