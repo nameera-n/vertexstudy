@@ -40,6 +40,12 @@ st.markdown(
     margin-top: 0.5rem;
 }
 
+label[data-testid="stWidgetLabel"] {
+    color: white !important;
+    font-size: 1.4rem !important;
+    font-weight: 700 !important;
+}
+
 .metric-card {
     background: rgba(16, 185, 129, 0.08);
     border: 1px solid rgba(16, 185, 129, 0.15);
@@ -102,8 +108,11 @@ st.markdown(
 .stTextInput input {
     border-radius: 14px;
     border: 1px solid rgba(16, 185, 129, 0.2);
-    background: rgba(255,255,255,0.05);
-    color: white;
+    background: white;
+    color: black !important;
+    font-size: 1.15rem;
+    font-weight: 500;
+    padding: 0.9rem;
 }
 
 .stButton button {
@@ -139,9 +148,13 @@ run = st.button("Analyze Sentiment")
 
 
 def get_sentiment_label(avg):
-    if avg > 0.1:
+    if avg >= 0.5:
+        return "Strongly Positive", "sentiment-positive"
+    elif avg >= 0.15:
         return "Positive", "sentiment-positive"
-    elif avg < -0.1:
+    elif avg <= -0.5:
+        return "Strongly Negative", "sentiment-negative"
+    elif avg <= -0.15:
         return "Negative", "sentiment-negative"
     return "Neutral", "sentiment-neutral"
 
