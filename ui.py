@@ -10,7 +10,7 @@ st.markdown(
     """
 <style>
 .stApp {
-    background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+    background: linear-gradient(180deg, #022c22 0%, #052e16 45%, #020617 100%);
     color: white;
 }
 
@@ -22,33 +22,35 @@ st.markdown(
 .hero {
     padding: 2rem;
     border-radius: 24px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.18);
     margin-bottom: 2rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
 }
 
 .hero-title {
     font-size: 3rem;
     font-weight: 700;
-    color: white;
+    color: #ecfdf5;
 }
 
 .hero-subtitle {
-    color: #cbd5e1;
+    color: #a7f3d0;
     font-size: 1.1rem;
     margin-top: 0.5rem;
 }
 
 .metric-card {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.15);
     border-radius: 18px;
     padding: 1.25rem;
     text-align: center;
+    backdrop-filter: blur(10px);
 }
 
 .metric-title {
-    color: #94a3b8;
+    color: #a7f3d0;
     font-size: 0.95rem;
 }
 
@@ -60,11 +62,11 @@ st.markdown(
 }
 
 .sentiment-positive {
-    color: #22c55e;
+    color: #4ade80;
 }
 
 .sentiment-negative {
-    color: #ef4444;
+    color: #f87171;
 }
 
 .sentiment-neutral {
@@ -72,8 +74,8 @@ st.markdown(
 }
 
 .news-card {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(16, 185, 129, 0.06);
+    border: 1px solid rgba(16, 185, 129, 0.12);
     border-radius: 16px;
     padding: 1rem;
     margin-bottom: 1rem;
@@ -90,9 +92,16 @@ st.markdown(
     font-weight: 600;
 }
 
+.source-url {
+    color: #6ee7b7;
+    margin-top: 0.6rem;
+    font-size: 0.9rem;
+    word-break: break-all;
+}
+
 .stTextInput input {
     border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.15);
+    border: 1px solid rgba(16, 185, 129, 0.2);
     background: rgba(255,255,255,0.05);
     color: white;
 }
@@ -101,7 +110,7 @@ st.markdown(
     width: 100%;
     border-radius: 14px;
     border: none;
-    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    background: linear-gradient(90deg, #10b981, #22c55e);
     color: white;
     font-weight: 600;
     padding: 0.75rem;
@@ -149,6 +158,8 @@ if run and query:
             avg = weighted_average(results, items)
             sentiment, sentiment_class = get_sentiment_label(avg)
 
+        st.markdown(f"### Source: `{query}`")
+
         col1, col2, col3 = st.columns(3)
 
         with col1:
@@ -194,6 +205,8 @@ if run and query:
             else:
                 cls = "sentiment-neutral"
 
+            item_url = getattr(item, 'url', query)
+
             st.markdown(
                 f"""
 <div class='news-card'>
@@ -201,6 +214,7 @@ if run and query:
     <div class='news-score {cls}'>
         {res.label} • Confidence {res.confidence * 100:.1f}%
     </div>
+    <div class='source-url'>🔗 {item_url}</div>
 </div>
 """,
                 unsafe_allow_html=True,
