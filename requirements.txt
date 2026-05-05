@@ -1,0 +1,9 @@
+beautifulsoup4
+lxml
+sentencepiece
+torch
+transformers
+fastapi
+uvicorn
+streamlit
+pytest

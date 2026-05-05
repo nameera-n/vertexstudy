@@ -1,11 +1,23 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from analysis_pipeline import analyze_ticker, analyze_url, parse_window
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
 
 @app.get("/analyze")
 def analyze(ticker: str = None, url: str = None, window: str = None):
@@ -16,7 +28,6 @@ def analyze(ticker: str = None, url: str = None, window: str = None):
 
     if ticker:
         return analyze_ticker(ticker, w, output_mode="data")
-    elif url:
+    if url:
         return analyze_url(url, w, output_mode="data")
-    else:
-        return {"error": "Provide ticker or url"}
+    return {"error": "Provide ticker or url"}
