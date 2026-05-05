@@ -4,11 +4,39 @@ from scraper import fetch_headlines
 from scraper_url import fetch_headlines_from_url
 from scorer import score_batch, weighted_average
 
-st.set_page_config(page_title="VertexStudy", page_icon="📈", layout="wide")
+st.set_page_config(
+    page_title="Stock Sentiment Analysis - Nameera's Independent Study",
+    page_icon="📈",
+    layout="wide",
+)
 
 st.markdown(
     """
 <style>
+header {
+    visibility: hidden;
+}
+
+[data-testid="stToolbar"] {
+    display: none;
+}
+
+[data-testid="stDecoration"] {
+    display: none;
+}
+
+[data-testid="stStatusWidget"] {
+    display: none;
+}
+
+#MainMenu {
+    visibility: hidden;
+}
+
+footer {
+    visibility: hidden;
+}
+
 .stApp {
     background: linear-gradient(180deg, #022c22 0%, #052e16 45%, #020617 100%);
     color: white;
@@ -16,7 +44,7 @@ st.markdown(
 
 .block-container {
     max-width: 1100px;
-    padding-top: 2rem;
+    padding-top: 1rem;
 }
 
 .hero {
@@ -132,8 +160,8 @@ label[data-testid="stWidgetLabel"] {
 st.markdown(
     """
 <div class='hero'>
-    <div class='hero-title'>📈 VertexStudy</div>
-    <div class='hero-subtitle'>AI-powered stock and finance sentiment dashboard using FinBERT</div>
+    <div class='hero-title'>📈 Stock Sentiment Analysis</div>
+    <div class='hero-subtitle'>Nameera's Independent Study • AI-powered financial sentiment analysis using FinBERT</div>
 </div>
 """,
     unsafe_allow_html=True,
