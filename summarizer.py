@@ -1,6 +1,5 @@
 from transformers import pipeline
 
-
 _summarizer = None
 
 
@@ -9,8 +8,8 @@ def get_summarizer():
 
     if _summarizer is None:
         _summarizer = pipeline(
-            task="text2text-generation",
-            model="google/flan-t5-base",
+            "text-generation",
+            model="distilgpt2"
         )
 
     return _summarizer
@@ -20,21 +19,28 @@ def summarize_headlines(items, max_items=10):
     texts = [item.text for item in items[:max_items] if item.text]
 
     if not texts:
-        return "No headlines available for summarization."
+        return "No headlines available."
 
     combined = ". ".join(texts)
 
     prompt = (
-        "Summarize the financial sentiment and key market themes from these headlines: "
+        "Financial market summary based on these headlines: "
         + combined
+        + "\nSummary:"
     )
 
     summarizer = get_summarizer()
 
     result = summarizer(
         prompt,
-        max_new_tokens=60,
+        max_new_tokens=40,
         do_sample=False,
+        truncation=True,
     )
 
-    return result[0]["generated_text"]
+    generated = result[0]["generated_text"]
+
+    if "Summary:" in generated:
+        generated = generated.split("Summary:")[-1].strip()
+
+    return generated
