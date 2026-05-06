@@ -3,6 +3,7 @@ import streamlit as st
 from scraper import fetch_headlines
 from scraper_url import fetch_headlines_from_url
 from scorer import score_batch, weighted_average
+from summarizer import summarize_headlines
 
 st.set_page_config(
     page_title="Stock Sentiment Analysis - Nameera's Independent Study",
@@ -66,6 +67,28 @@ footer {
     color: #a7f3d0;
     font-size: 1.1rem;
     margin-top: 0.5rem;
+}
+
+.summary-card {
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.15);
+    border-radius: 18px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.summary-title {
+    color: #6ee7b7;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+}
+
+.summary-text {
+    color: white;
+    font-size: 1.05rem;
+    line-height: 1.7;
 }
 
 label[data-testid="stWidgetLabel"] {
@@ -207,6 +230,8 @@ if run and query:
             avg = weighted_average(results, items)
             sentiment, sentiment_class = get_sentiment_label(avg)
 
+            ai_summary = summarize_headlines(items)
+
         st.markdown(f"### Source: `{query}`")
 
         col1, col2, col3 = st.columns(3)
@@ -243,6 +268,16 @@ if run and query:
 """,
                 unsafe_allow_html=True,
             )
+
+        st.markdown(
+            f"""
+<div class='summary-card'>
+    <div class='summary-title'>🤖 AI Market Summary</div>
+    <div class='summary-text'>{ai_summary}</div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
 
         st.markdown("## Latest Headlines")
 
