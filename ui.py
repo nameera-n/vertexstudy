@@ -127,10 +127,18 @@ label[data-testid="stWidgetLabel"] {
 }
 
 .source-url {
-    color: #6ee7b7;
     margin-top: 0.6rem;
     font-size: 0.9rem;
-    word-break: break-all;
+}
+
+.source-url a {
+    color: #6ee7b7;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.source-url a:hover {
+    text-decoration: underline;
 }
 
 .stTextInput input {
@@ -255,7 +263,9 @@ if run and query:
     <div class='news-score {cls}'>
         {res.label} • Confidence {res.confidence * 100:.1f}%
     </div>
-    <div class='source-url'>🔗 {item_url}</div>
+    <div class='source-url'>
+        🔗 <a href='{item_url}' target='_blank'>Open Article</a>
+    </div>
 </div>
 """,
                 unsafe_allow_html=True,
