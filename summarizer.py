@@ -9,8 +9,8 @@ def get_summarizer():
 
     if _summarizer is None:
         _summarizer = pipeline(
-            "summarization",
-            model="facebook/bart-large-cnn",
+            task="text2text-generation",
+            model="google/flan-t5-base",
         )
 
     return _summarizer
@@ -24,13 +24,17 @@ def summarize_headlines(items, max_items=10):
 
     combined = ". ".join(texts)
 
+    prompt = (
+        "Summarize the financial sentiment and key market themes from these headlines: "
+        + combined
+    )
+
     summarizer = get_summarizer()
 
     result = summarizer(
-        combined,
-        max_length=60,
-        min_length=20,
+        prompt,
+        max_new_tokens=60,
         do_sample=False,
     )
 
-    return result[0]["summary_text"]
+    return result[0]["generated_text"]
