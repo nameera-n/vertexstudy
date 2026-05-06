@@ -32,6 +32,21 @@ def _parse_rss_datetime(value: str | None) -> datetime | None:
         return None
 
 
+def _clean_url(url: str | None) -> str | None:
+    if not url:
+        return None
+
+    url = url.strip()
+
+    if url.startswith("//"):
+        return "https:" + url
+
+    if url.startswith("/"):
+        return "https://finance.yahoo.com" + url
+
+    return url
+
+
 def _fetch_rss(ticker: str) -> list[NewsItem]:
     url = f"https://finance.yahoo.com/rss/headline?s={urllib.parse.quote(ticker)}"
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
@@ -41,12 +56,11 @@ def _fetch_rss(ticker: str) -> list[NewsItem]:
             xml = resp.read()
 
         root = ElementTree.fromstring(xml)
-
         items = []
 
         for item in root.iter("item"):
             title = item.findtext("title")
-            link = item.findtext("link")
+            link = _clean_url(item.findtext("link"))
 
             if not title or not title.strip():
                 continue
@@ -69,28 +83,54 @@ class HeadlineParser(HTMLParser):
     def __init__(self):
         super().__init__()
         self.headlines = []
+        self._current_link = None
+        self._link_stack = []
         self._in_h3 = False
-        self._current = []
+        self._current_text = []
+        self._headline_link = None
 
     def handle_starttag(self, tag, attrs):
+        attrs_dict = dict(attrs)
+
+        if tag == "a":
+            href = _clean_url(attrs_dict.get("href"))
+            self._link_stack.append(href)
+            self._current_link = href
+
         if tag == "h3":
             self._in_h3 = True
-            self._current = []
+            self._current_text = []
+            self._headline_link = self._current_link
 
     def handle_endtag(self, tag):
         if tag == "h3" and self._in_h3:
-            text = "".join(self._current).strip()
+            text = "".join(self._current_text).strip()
+
             if text:
-                self.headlines.append(text)
+                self.headlines.append(
+                    NewsItem(
+                        text=text,
+                        url=self._headline_link,
+                    )
+                )
+
             self._in_h3 = False
+            self._current_text = []
+            self._headline_link = None
+
+        if tag == "a":
+            if self._link_stack:
+                self._link_stack.pop()
+            self._current_link = self._link_stack[-1] if self._link_stack else None
 
     def handle_data(self, data):
         if self._in_h3:
-            self._current.append(data)
+            self._current_text.append(data)
 
 
 def _fetch_html(ticker: str) -> list[NewsItem]:
     urls = [
+        f"https://finance.yahoo.com/quote/{urllib.parse.quote(ticker)}/news/",
         f"https://finance.yahoo.com/quote/{urllib.parse.quote(ticker)}/",
         f"https://finance.yahoo.com/quote/{urllib.parse.quote(ticker)}",
     ]
@@ -115,8 +155,10 @@ def _fetch_html(ticker: str) -> list[NewsItem]:
             parser = HeadlineParser()
             parser.feed(html)
 
-            if parser.headlines:
-                return [NewsItem(text=h, url=url) for h in parser.headlines]
+            items = [item for item in parser.headlines if item.url]
+
+            if items:
+                return items
 
         except Exception:
             continue
@@ -128,12 +170,14 @@ def fetch_headlines(ticker: str) -> list[NewsItem]:
     ticker = ticker.upper()
 
     print(f"  [Fetching headlines for {ticker} via RSS...]")
-
     items = _fetch_rss(ticker)
 
-    if not items:
-        print("  [RSS empty, falling back to HTML scrape...]")
-        items = _fetch_html(ticker)
+    if not items or not any(item.url for item in items):
+        print("  [RSS missing article links, falling back to HTML scrape...]")
+        html_items = _fetch_html(ticker)
+
+        if html_items:
+            items = html_items
 
     if not items:
         print(f"[ERROR] Could not retrieve headlines for {ticker}.")
