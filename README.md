@@ -104,4 +104,4 @@ If torchvision errors appear, run:
 pip install torch torchvision torchaudio
 Preferred Usage
 
-For grading/demo purposes, it is strongly recommended to run the project through the Streamlit dashboard rather than only using the CLI or API endpoints, since the dashboard contains the primary visualization and interaction features of the project.
+For demo purposes, it is strongly recommended to run the project through the Streamlit dashboard rather than only using the CLI or API endpoints, since the dashboard contains the primary visualization and interaction features of the project.
