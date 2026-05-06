@@ -2,6 +2,7 @@ beautifulsoup4
 lxml
 sentencepiece
 torch
+torchvision
 transformers
 fastapi
 uvicorn
